@@ -7,7 +7,6 @@
   */
 void apMain(void)
 {
-  
   /* SSD1306 초기 화면 프레임 및 타이틀 출력 */
   ssd1306Clear();
   ssd1306DrawRect(0, 0, SSD1306_WIDTH, SSD1306_HEIGHT, SSD1306_COLOR_WHITE);
@@ -63,8 +62,8 @@ void apMain(void)
       prev_1s_tick = HAL_GetTick();
       uptime_sec++;
 
-      /* DS1302 RTC 읽기 */
-      ds1302GetDateTime(&rtc_time);
+      /* DS1302 RTC 읽기 (핸들 기반) */
+      ds1302GetDateTime(&hds1302, &rtc_time);
 
       /* DHT11 온습도 읽기 */
       dht11Read(&dht_data);

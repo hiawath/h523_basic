@@ -4,14 +4,21 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#define DS1302_RST_PIN    GPIO_PIN_0
-#define DS1302_RST_PORT   GPIOA
+/* DS1302 핀 구조체 */
+typedef struct {
+  GPIO_TypeDef *rst_port;
+  uint16_t      rst_pin;
+  GPIO_TypeDef *dat_port;
+  uint16_t      dat_pin;
+  GPIO_TypeDef *clk_port;
+  uint16_t      clk_pin;
+} ds1302Pin_t;
 
-#define DS1302_DAT_PIN    GPIO_PIN_1
-#define DS1302_DAT_PORT   GPIOA
-
-#define DS1302_CLK_PIN    GPIO_PIN_4
-#define DS1302_CLK_PORT   GPIOA
+/* DS1302 드라이버 핸들 구조체 */
+typedef struct {
+  ds1302Pin_t pins;
+  bool        initialized;
+} ds1302Handle_t;
 
 typedef struct {
   uint16_t year;        /* 2000 ~ 2099 */
@@ -23,9 +30,10 @@ typedef struct {
   uint8_t  sec;         /* 0 ~ 59 */
 } ds1302Time_t;
 
-void ds1302Init(void);
-void ds1302SetTime(uint16_t year, uint8_t month, uint8_t day, uint8_t hour, uint8_t min, uint8_t sec);
-void ds1302SetDateTime(const ds1302Time_t *time);
-bool ds1302GetDateTime(ds1302Time_t *time);
-void ds1302SetBuildTime(void);
+void        ds1302Init(ds1302Handle_t *hds, const ds1302Pin_t *pins);
+void        ds1302SetTime(ds1302Handle_t *hds, uint16_t year, uint8_t month, uint8_t day,
+                          uint8_t hour, uint8_t min, uint8_t sec);
+void        ds1302SetDateTime(ds1302Handle_t *hds, const ds1302Time_t *time);
+bool        ds1302GetDateTime(ds1302Handle_t *hds, ds1302Time_t *time);
+void        ds1302SetBuildTime(ds1302Handle_t *hds);
 const char* ds1302GetDayStr(uint8_t day_of_week);

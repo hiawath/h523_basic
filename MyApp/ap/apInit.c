@@ -12,4 +12,9 @@ void apInit(void)
 
   /* I2C1 버스 스캔 실행 */
   i2cScan();
+
+  /* 스캔 후 I2C 버스 정리 및 SSD1306 초기화 확인 */
+  i2cBusRecover();
+  HAL_Delay(10);
+  ssd1306Init();
 }

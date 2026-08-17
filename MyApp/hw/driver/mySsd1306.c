@@ -3,8 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define SSD1306_I2C_ADDR (0x3C << 1) // 0x78
-
+static uint8_t ssd1306_i2c_addr = 0x3C << 1;
 static uint8_t ssd1306_buffer[SSD1306_WIDTH * SSD1306_HEIGHT / 8];
 
 /* 6x8 Basic ASCII Font Table (ASCII 0x20 ' ' to 0x7E '~') */
@@ -108,13 +107,21 @@ static const uint8_t font6x8[][6] = {
 
 static void writeCommand(uint8_t cmd)
 {
-  HAL_I2C_Mem_Write(&hi2c1, SSD1306_I2C_ADDR, 0x00, 1, &cmd, 1, 10);
+  HAL_I2C_Mem_Write(&hi2c1, ssd1306_i2c_addr, 0x00, 1, &cmd, 1, 10);
 }
 
 bool ssd1306Init(void)
 {
-  // 디바이스 응답 확인
-  if (HAL_I2C_IsDeviceReady(&hi2c1, SSD1306_I2C_ADDR, 2, 10) != HAL_OK)
+  /* I2C 주소 자동 감지: 0x3C (0x78) 우선 시도, 없으면 0x3D (0x7A) */
+  if (HAL_I2C_IsDeviceReady(&hi2c1, 0x3C << 1, 2, 10) == HAL_OK)
+  {
+    ssd1306_i2c_addr = 0x3C << 1;
+  }
+  else if (HAL_I2C_IsDeviceReady(&hi2c1, 0x3D << 1, 2, 10) == HAL_OK)
+  {
+    ssd1306_i2c_addr = 0x3D << 1;
+  }
+  else
   {
     return false;
   }
@@ -188,7 +195,7 @@ void ssd1306Update(void)
   writeCommand(0);
   writeCommand((SSD1306_HEIGHT / 8) - 1);
 
-  HAL_I2C_Mem_Write(&hi2c1, SSD1306_I2C_ADDR, 0x40, 1, ssd1306_buffer, sizeof(ssd1306_buffer), 100);
+  HAL_I2C_Mem_Write(&hi2c1, ssd1306_i2c_addr, 0x40, 1, ssd1306_buffer, sizeof(ssd1306_buffer), 100);
 }
 
 void ssd1306DrawPixel(int16_t x, int16_t y, uint8_t color)

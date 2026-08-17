@@ -11,4 +11,6 @@
 #include "myHcSr04.h"
 #include "myLcd1602.h"
 
+extern ds1302Handle_t hds1302;
+
 void hwInit(void);

@@ -10,14 +10,14 @@ void i2cInit(void)
  * @note   I2C 슬레이브가 SDA를 LOW로 잡고 있는 경우(버스 Stuck 상태),
  *         SCL을 최대 9회 토글하여 슬레이브 트랜잭션을 강제로 완료시킨 뒤
  *         STOP 조건을 생성하고 I2C 페리페럴을 재초기화합니다.
- *         I2C1 핀: PB8(SCL), PB9(SDA)
+ *         I2C1 핀: PB6(SCL), PB7(SDA)
  */
 void i2cBusRecover(void)
 {
   /* 1. I2C 페리페럴 비활성화 - GPIO를 직접 제어하기 위해 필요 */
   HAL_I2C_DeInit(&hi2c1);
 
-  /* 2. PB8(SCL), PB9(SDA)를 Open-Drain 출력으로 전환 */
+  /* 2. PB6(SCL), PB7(SDA)를 Open-Drain 출력으로 전환 */
   GPIO_InitTypeDef GPIO_InitStruct = {0};
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
@@ -25,34 +25,34 @@ void i2cBusRecover(void)
   GPIO_InitStruct.Pull  = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 
-  GPIO_InitStruct.Pin = GPIO_PIN_8; // SCL
+  GPIO_InitStruct.Pin = GPIO_PIN_6; /* SCL */
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-  GPIO_InitStruct.Pin = GPIO_PIN_9; // SDA
+  GPIO_InitStruct.Pin = GPIO_PIN_7; /* SDA */
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* 3. SDA가 LOW이면 SCL을 최대 9회 토글하여 슬레이브 해방 */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET); // SCL = H
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, GPIO_PIN_SET); // SDA = H
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET); /* SCL = H */
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET); /* SDA = H */
   HAL_Delay(1);
 
   for (int i = 0; i < 9; i++)
   {
-    if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9) == GPIO_PIN_SET)
+    if (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7) == GPIO_PIN_SET)
     {
-      break; // SDA가 HIGH이면 슬레이브가 해방됨
+      break; /* SDA가 HIGH이면 슬레이브가 해방됨 */
     }
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_RESET); // SCL = L
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET); /* SCL = L */
     HAL_Delay(1);
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);   // SCL = H
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);   /* SCL = H */
     HAL_Delay(1);
   }
 
   /* 4. STOP 조건 수동 생성: SDA L→H (SCL=H 상태에서) */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, GPIO_PIN_RESET); // SDA = L
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_RESET); /* SDA = L */
   HAL_Delay(1);
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, GPIO_PIN_SET);   // SCL = H
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);   /* SCL = H */
   HAL_Delay(1);
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, GPIO_PIN_SET);   // SDA = H (STOP)
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, GPIO_PIN_SET);   /* SDA = H (STOP) */
   HAL_Delay(1);
 
   /* 5. I2C 페리페럴 재초기화 */
