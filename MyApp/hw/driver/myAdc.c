@@ -1,10 +1,14 @@
 #include "myAdc.h"
 
-/* STM32F411 팩토리 캘리브레이션 값 주소 (3.3V 기준 공장 측정치) */
-#define TS_CAL1_ADDR             ((uint16_t *)0x1FFF7A2C) /* 30°C 측정값 */
-#define TS_CAL2_ADDR             ((uint16_t *)0x1FFF7A2E) /* 110°C 측정값 */
+/* STM32H523 팩토리 캘리브레이션 값 주소 (3.0V 기준 공장 측정치, H5 OTP 영역) */
+#define TS_CAL1_ADDR             ((uint16_t *)0x08FFF814) /* 30°C 측정값  */
+#define TS_CAL2_ADDR             ((uint16_t *)0x08FFF818) /* 130°C 측정값 */
 #define TS_CAL1_TEMP             30.0f
-#define TS_CAL2_TEMP             110.0f
+#define TS_CAL2_TEMP             130.0f
+
+/* H5 캘리브레이션 기준 전압 보정 계수 (CAL: 3.0V 측정, 실제 VDDA: 3.3V) */
+#define TS_CAL_VREF_MV           3000.0f /* 캘리브 기준 전압 */
+#define TS_VDDA_MV               3300.0f /* 실제 보드 VDDA */
 
 /* 데이터시트 표준 파라미터 (Fallback용) */
 #define V25_MV                   760.0f  /* 25도에서의 전압: 약 0.76V (760mV) */
@@ -12,8 +16,8 @@
 #define VREF_MV                  3300.0f /* ADC 기준 전압: 3.3V */
 #define ADC_MAX_VAL              4095.0f /* 12비트 ADC 최대값 */
 
-/* DMA 전송용 버퍼 (Half-Word / 16비트 정렬) */
-static uint16_t adc_dma_buf = 0;
+/* DMA 전송용 버퍼 (Half-Word / 16비트, 32바이트 정렬 — GPDMA/캐시 대응) */
+static uint16_t adc_dma_buf __attribute__((aligned(32))) = 0;
 
 /* DMA 인터럽트와 메인 루프 간 공유 변수 */
 static volatile uint32_t adc_raw_val = 0;
@@ -90,12 +94,13 @@ void adcUpdate(void)
     /* 팩토리 캘리브레이션 유효성 확인 */
     if (ts_cal2 > ts_cal1 && ts_cal1 > 0 && ts_cal2 < 4096)
     {
-      /* ST 공식 팩토리 캘리브레이션 온도 보정 공식 */
-      calculated_temp = ((TS_CAL2_TEMP - TS_CAL1_TEMP) * ((float)adc_raw_val - (float)ts_cal1)) / (float)(ts_cal2 - ts_cal1) + TS_CAL1_TEMP;
+      /* H5 공식: CAL은 3.0V 기준 측정값 → 실제 VDDA(3.3V)로 raw 보정 후 적용 */
+      float raw_corrected = (float)adc_raw_val * (TS_CAL_VREF_MV / TS_VDDA_MV);
+      calculated_temp = ((TS_CAL2_TEMP - TS_CAL1_TEMP) * (raw_corrected - (float)ts_cal1)) / (float)(ts_cal2 - ts_cal1) + TS_CAL1_TEMP;
     }
     else
     {
-      /* 표준 데이터시트 공식 (Fallback) */
+      /* 표준 데이터시트 공식 (Fallback — CAL 값 비정상 시) */
       float vsense_mv = ((float)adc_raw_val * VREF_MV) / ADC_MAX_VAL;
       calculated_temp = ((vsense_mv - V25_MV) / AVG_SLOPE) + 25.0f;
     }

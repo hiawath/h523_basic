@@ -20,6 +20,7 @@
 #include "main.h"
 #include "adc.h"
 #include "fdcan.h"
+#include "gpdma.h"
 #include "i2c.h"
 #include "icache.h"
 #include "usart.h"
@@ -96,12 +97,13 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_GPDMA1_Init();
   MX_ICACHE_Init();
   MX_USART2_UART_Init();
   MX_ADC1_Init();
   MX_FDCAN1_Init();
-  MX_FDCAN2_Init();
   MX_I2C1_Init();
+  MX_FDCAN2_Init();
   /* USER CODE BEGIN 2 */
   apInit();
   apMain();

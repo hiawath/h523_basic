@@ -37,7 +37,7 @@ void apMain(void)
   while (1)
   {
     /* ADC 샘플링 주기 관리 및 DMA 완료 시 내부 온도 계산 */
-   // adcUpdate();
+    adcUpdate();
 
     /* 1. 200ms마다 HC-SR04 초음파 거리 측정 및 LCD1602 화면 갱신 */
     if (HAL_GetTick() - prev_200ms_tick >= 200)
