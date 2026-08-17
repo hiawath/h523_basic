@@ -51,45 +51,48 @@ bool hcSr04Read(float *distance_cm)
   delayUs(10);
   HAL_GPIO_WritePin(HCSR04_TRIG_PORT, HCSR04_TRIG_PIN, GPIO_PIN_RESET);
 
-  /* 2. Echo 핀이 HIGH가 될 때까지 대기 (최대 5ms 타임아웃) */
+  /* 2. Echo 핀이 HIGH가 될 때까지 대기 (최대 10ms 타임아웃) */
   timeout = 5000;
   while (HAL_GPIO_ReadPin(HCSR04_ECHO_PORT, HCSR04_ECHO_PIN) == GPIO_PIN_RESET)
   {
-    delayUs(1);
+    delayUs(2);
     if (--timeout == 0)
     {
+      if (distance_cm) *distance_cm = latest_distance;
       return false;
     }
   }
 
-  /* 3. Echo 핀이 LOW가 될 때까지 시간 측정 (1us 단위 카운팅, 최대 25ms ≈ 430cm) */
-  uint32_t duration_us = 0;
+  /* 3. Echo 핀이 LOW가 될 때까지 HIGH 펄스 지속시간 측정 (최대 25ms ≈ 430cm) */
+  /* 루프 1회당 약 2us(delayUs(1) + GPIO 읽기 오버헤드) */
+  uint32_t count = 0;
   while (HAL_GPIO_ReadPin(HCSR04_ECHO_PORT, HCSR04_ECHO_PIN) == GPIO_PIN_SET)
   {
     delayUs(1);
-    duration_us++;
-    if (duration_us > 25000)
+    count++;
+    if (count > 25000)
     {
+      if (distance_cm) *distance_cm = latest_distance;
       return false;
     }
   }
 
-  /* 4. 거리(cm) 환산 (음속 340m/s: 시간(us) / 58.0) */
-  float dist = (float)duration_us / 58.0f;
+  /* 4. 시간(us) 및 거리(cm) 환산 (루프 1회 = 약 2.0us 보정) */
+  float duration_us = (float)count * 2.0f;
+  float dist = duration_us / 58.0f;
 
   /* 유효 거리 범위 체크 (2cm ~ 400cm) */
-  if (dist < 2.0f || dist > 400.0f)
+  if (dist >= 2.0f && dist <= 400.0f)
   {
-    return false;
+    latest_distance = dist;
   }
 
-  latest_distance = dist;
   if (distance_cm)
   {
-    *distance_cm = dist;
+    *distance_cm = latest_distance;
   }
 
-  return true;
+  return (dist >= 2.0f && dist <= 400.0f);
 }
 
 float hcSr04GetDistance(void)

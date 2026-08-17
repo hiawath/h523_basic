@@ -194,12 +194,12 @@ void ssd1306Update(void)
   };
 
   HAL_StatusTypeDef status = HAL_I2C_Mem_Write(&hi2c1, ssd1306_i2c_addr, 0x00, 1,
-                                               (uint8_t *)set_range_cmd, sizeof(set_range_cmd), 20);
+                                               (uint8_t *)set_range_cmd, sizeof(set_range_cmd), 50);
   if (status == HAL_OK)
   {
-    /* 1024바이트 디스플레이 버퍼 전송 */
+    /* 1024바이트 디스플레이 버퍼 전송 (100kHz I2C에서 ~95ms 소요되므로 200ms 타임아웃 적용) */
     HAL_I2C_Mem_Write(&hi2c1, ssd1306_i2c_addr, 0x40, 1,
-                      ssd1306_buffer, sizeof(ssd1306_buffer), 100);
+                      ssd1306_buffer, sizeof(ssd1306_buffer), 200);
   }
 }
 
