@@ -128,8 +128,9 @@
   */
 
 #if !defined  (HSE_VALUE)
-  #define HSE_VALUE    (25000000UL) /*!< Value of the External oscillator in Hz */
+  #define HSE_VALUE    (8000000UL) /*!< Value of the External oscillator in Hz (Match stm32h5xx_hal_conf.h) */
 #endif /* HSE_VALUE */
+
 
 #if !defined  (CSI_VALUE)
   #define CSI_VALUE    (4000000UL)  /*!< Value of the Internal oscillator in Hz*/

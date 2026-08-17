@@ -12,5 +12,6 @@
 #include "myLcd1602.h"
 
 extern ds1302Handle_t hds1302;
+extern dht11Handle_t  hdht11;
 
 void hwInit(void);

@@ -12,21 +12,18 @@ static bool     lcd_ok = false; // 초기화 성공 여부: false이면 모든 �
  * 내부 헬퍼 함수들
  * ----------------------------------------------------------------*/
 
-/**
- * @brief  I2C 1바이트 전송 (실패 시 버스 복구 1회 재시도)
- */
 static HAL_StatusTypeDef i2c_send(uint8_t *buf, uint16_t len)
 {
-  HAL_StatusTypeDef ret = HAL_I2C_Master_Transmit(&hi2c1, lcd1602_addr, buf, len, 10);
+  HAL_StatusTypeDef ret = HAL_I2C_Master_Transmit(&hi2c1, lcd1602_addr, buf, len, 20);
   if (ret != HAL_OK)
   {
-    /* I2C 버스 복구 후 1회 재시도 */
-    i2cBusRecover();
-    HAL_Delay(5);
-    ret = HAL_I2C_Master_Transmit(&hi2c1, lcd1602_addr, buf, len, 10);
+    /* 일시적 BUSY/NACK 시 짧은 딜레이 후 1회 재시도 */
+    HAL_Delay(1);
+    ret = HAL_I2C_Master_Transmit(&hi2c1, lcd1602_addr, buf, len, 20);
   }
   return ret;
 }
+
 
 /**
  * @brief  HD44780: 4비트 nibble 전송 + Enable 스트로브

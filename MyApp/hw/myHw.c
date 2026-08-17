@@ -1,7 +1,10 @@
 #include "myHw.h"
 
-/* DS1302 드라이버 핸들 (전역 정의) */
+/* DS1302 드라이버 핸들 */
 ds1302Handle_t hds1302;
+
+/* DHT11 드라이버 핸들 */
+dht11Handle_t hdht11;
 
 void hwInit(void)
 {
@@ -23,6 +26,12 @@ void hwInit(void)
   };
   ds1302Init(&hds1302, &ds1302_pins);
 
-  dht11Init();
+  /* DHT11: CubeMX Label 매크로로 핀 정보 주입 */
+  dht11Pin_t dht11_pins = {
+    .port = DH11_GPIO_Port,
+    .pin  = DH11_Pin,
+  };
+  dht11Init(&hdht11, &dht11_pins);
+
   hcSr04Init();
 }

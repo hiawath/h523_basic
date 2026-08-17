@@ -25,20 +25,31 @@ void apMain(void)
   lcd1602Print("Dist:    0.0 cm ");
 
   uint32_t prev_200ms_tick = HAL_GetTick();
-  uint32_t prev_1s_tick = HAL_GetTick();
-  uint32_t uptime_sec = 0;
+  uint32_t prev_1s_tick    = HAL_GetTick();
+  uint32_t prev_2s_tick    = HAL_GetTick();
+  uint32_t uptime_sec      = 0;
   char str_buf[32];
 
   ds1302Time_t rtc_time = {0};
-  dht11Data_t dht_data = {0};
-  float distance_cm = 0.0f;
+  dht11Data_t dht_data  = {0};
+  float distance_cm     = 0.0f;
+
+  /* 첫 1회 DHT11 즉시 읽기 */
+  dht11Read(&hdht11, &dht_data);
 
   while (1)
   {
     /* ADC 샘플링 주기 관리 및 DMA 완료 시 내부 온도 계산 */
     adcUpdate();
 
-    /* 1. 200ms마다 HC-SR04 초음파 거리 측정 및 LCD1602 화면 갱신 */
+    /* 1. 2000ms(2초)마다 DHT11 온습도 센서 읽기 (DHT11 권장 샘플링 주기 준수) */
+    if (HAL_GetTick() - prev_2s_tick >= 2000)
+    {
+      prev_2s_tick = HAL_GetTick();
+      dht11Read(&hdht11, &dht_data);
+    }
+
+    /* 2. 200ms마다 HC-SR04 초음파 거리 측정 및 LCD1602 화면 갱신 */
     if (HAL_GetTick() - prev_200ms_tick >= 200)
     {
       prev_200ms_tick = HAL_GetTick();
@@ -56,7 +67,7 @@ void apMain(void)
       }
     }
 
-    /* 2. 1초마다 RTC 시계, DHT11 온습도 센서 읽기 및 디스플레이/UART 갱신 */
+    /* 3. 1000ms(1초)마다 RTC 시계 읽기 및 SSD1306/UART 실시간 갱신 */
     if (HAL_GetTick() - prev_1s_tick >= 1000)
     {
       prev_1s_tick = HAL_GetTick();
@@ -64,9 +75,6 @@ void apMain(void)
 
       /* DS1302 RTC 읽기 (핸들 기반) */
       ds1302GetDateTime(&hds1302, &rtc_time);
-
-      /* DHT11 온습도 읽기 */
-      dht11Read(&dht_data);
 
       /* 내부 온도 취득 */
       float int_temp = adcGetTemp();

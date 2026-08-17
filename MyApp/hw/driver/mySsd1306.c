@@ -187,16 +187,22 @@ void ssd1306Clear(void)
 
 void ssd1306Update(void)
 {
-  writeCommand(0x21); // Set column address
-  writeCommand(0);
-  writeCommand(SSD1306_WIDTH - 1);
+  /* 컬럼(0~127) 및 페이지(0~7) 시작/끝 범위를 단일 I2C 트랜잭션으로 원자적(Atomic) 전송 */
+  static const uint8_t set_range_cmd[] = {
+    0x21, 0x00, (uint8_t)(SSD1306_WIDTH - 1),
+    0x22, 0x00, (uint8_t)((SSD1306_HEIGHT / 8) - 1)
+  };
 
-  writeCommand(0x22); // Set page address
-  writeCommand(0);
-  writeCommand((SSD1306_HEIGHT / 8) - 1);
-
-  HAL_I2C_Mem_Write(&hi2c1, ssd1306_i2c_addr, 0x40, 1, ssd1306_buffer, sizeof(ssd1306_buffer), 100);
+  HAL_StatusTypeDef status = HAL_I2C_Mem_Write(&hi2c1, ssd1306_i2c_addr, 0x00, 1,
+                                               (uint8_t *)set_range_cmd, sizeof(set_range_cmd), 20);
+  if (status == HAL_OK)
+  {
+    /* 1024바이트 디스플레이 버퍼 전송 */
+    HAL_I2C_Mem_Write(&hi2c1, ssd1306_i2c_addr, 0x40, 1,
+                      ssd1306_buffer, sizeof(ssd1306_buffer), 100);
+  }
 }
+
 
 void ssd1306DrawPixel(int16_t x, int16_t y, uint8_t color)
 {
